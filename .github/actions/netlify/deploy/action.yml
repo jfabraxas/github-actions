@@ -20,6 +20,7 @@ runs:
   using: composite
   steps:
     - name: Deploy to Netlify
+      timeout-minutes: 1
       uses: nwtgck/actions-netlify@v1.2
       with:
         publish-dir: ${{ inputs.publish-dir }}
@@ -32,4 +33,4 @@ runs:
       env:
         NETLIFY_AUTH_TOKEN: ${{ inputs.netlify-auth-token }}
         NETLIFY_SITE_ID: ${{ inputs.netlify-site-id }}
-      timeout-minutes: 1
+
