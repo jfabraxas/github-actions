@@ -8,7 +8,7 @@ inputs:
     required: false
     default: '16'
   access_submodules_token:
-    description: Access submodules token
+    description: Access submodules and private github packages
     required: true
 
 runs:
@@ -44,7 +44,8 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install
-    #   run: |
-    #     npm config set //npm.pkg.github.com/:_authToken $TOKEN
-    #     pnpm install
+      run: |
+        npm config set //npm.pkg.github.com/:_authToken $NPM_PKG_GITHUB_TOKEN
+        pnpm install
+      env:
+        NPM_PKG_GITHUB_TOKEN: ${{ inputs.access_submodules_token }}
