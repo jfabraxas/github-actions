@@ -10,7 +10,7 @@ inputs:
   access_submodules_token:
     description: Access submodules token
     required: true
-    
+
 runs:
   using: composite
   steps:
@@ -28,6 +28,8 @@ runs:
       with:
         node-version: '16'
         cache: 'pnpm'
-    - run: |
+    - name: Install dependencies
+      shell: bash
+      run: |
         npm config set //npm.pkg.github.com/:_authToken $TOKEN
         pnpm install
