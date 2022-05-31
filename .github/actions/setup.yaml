@@ -1,0 +1,34 @@
+name: Setup
+
+description: Setup Node.js, cache and install dependencies
+
+inputs:
+  node_version:
+    description: Node.js version
+    required: false
+    default: '16'
+  access_submodules_token:
+    description: Access submodules token
+    required: true
+    default: ${{ secrets.PAT }}
+    
+runs:
+  using: composite
+  steps:
+    - name: Checkout with submodules
+      uses: actions/checkout@v3
+      with:
+        token: ${{ input.access_submodules_token }}
+        submodules: true
+    - name: Install pnpm
+      uses: pnpm/action-setup@2.2.1
+      with:
+        version: latest
+    - name: setup node
+      uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: 'pnpm'
+    - run: |
+        npm config set //npm.pkg.github.com/:_authToken $TOKEN
+        pnpm install
