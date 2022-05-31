@@ -10,7 +10,6 @@ inputs:
   access_submodules_token:
     description: Access submodules token
     required: true
-    default: ${{ secrets.PAT }}
     
 runs:
   using: composite
