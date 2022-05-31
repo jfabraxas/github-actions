@@ -1,0 +1,29 @@
+name: Vercel
+
+description: Deploy to Vercel
+
+inputs:
+  github_token:
+    description: GitHub token
+    required: true
+  vercel_token:
+    required: true
+  vercel_org_id:
+    required: true
+  vercel_project_id:
+    required: true
+  working_directory:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy auth.jfa.services to Vercel
+        uses: amondnet/vercel-action@v20 #deploy
+        with:
+          vercel-token: ${{ inputs.vercel_token }} # Required
+          github-token: ${{ inputs.github_token }} #Optional
+          vercel-org-id: ${{ inputs.vercel_org_id }} #Required
+          vercel-project-id: ${{ inputs.vercel_project_id }} #Required
+          working-directory: ${{ inputs.working_directory }} #./dist/apps/api
+          vercel-args: '--prod' #Optional

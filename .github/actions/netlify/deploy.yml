@@ -1,0 +1,35 @@
+name: Deploy to netlify
+
+description: Deploy to netlify
+
+inputs:
+  publish-dir:
+    description: the build directory
+    required: true
+  netlify-site-id:
+    description: the netlify site id
+    required: true
+  github-token:
+    description: the github token
+    required: true
+  netlify-auth-token:
+    description: the netlify auth token
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy to Netlify
+      uses: nwtgck/actions-netlify@v1.2
+      with:
+        publish-dir: ${{ inputs.publish-dir }}
+        production-branch: master
+        github-token: ${{ inputs.github-token }}
+        deploy-message: 'Deploy from GitHub Actions'
+        enable-pull-request-comment: false
+        enable-commit-comment: true
+        overwrites-pull-request-comment: true
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ inputs.netlify-auth-token }}
+        NETLIFY_SITE_ID: ${{ inputs.netlify-site-id }}
+      timeout-minutes: 1
