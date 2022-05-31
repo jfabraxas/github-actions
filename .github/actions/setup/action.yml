@@ -45,7 +45,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        npm config set //npm.pkg.github.com/:_authToken $NPM_PKG_GITHUB_TOKEN
+        npm config set //npm.pkg.github.com/:_authToken $TOKEN
         pnpm install
       env:
-        NPM_PKG_GITHUB_TOKEN: ${{ inputs.access_submodules_token }}
+        TOKEN: ${{ inputs.access_submodules_token }}
