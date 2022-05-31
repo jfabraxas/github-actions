@@ -19,17 +19,31 @@ runs:
       with:
         token: ${{ inputs.access_submodules_token }}
         submodules: true
-    - name: Install pnpm
-      uses: pnpm/action-setup@2.2.1
-      with:
-        version: latest
     - name: setup node
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: '16'
-        cache: 'pnpm'
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2.2.2
+      id: pnpm-install
+      with:
+        version: latest
+        run_install: false
+    - name: Get pnpm store directory
+      id: pnpm-cache
+      run: |
+        echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+    - uses: actions/cache@v3
+      name: Setup pnpm cache
+      with:
+        path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+    
     - name: Install dependencies
       shell: bash
-      run: |
-        npm config set //npm.pkg.github.com/:_authToken $TOKEN
-        pnpm install
+      run: pnpm install
+    #   run: |
+    #     npm config set //npm.pkg.github.com/:_authToken $TOKEN
+    #     pnpm install
