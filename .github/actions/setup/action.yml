@@ -25,9 +25,9 @@ runs:
         version: latest
     - name: setup node
       uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-          cache: 'pnpm'
+      with:
+        node-version: '16'
+        cache: 'pnpm'
     - run: |
         npm config set //npm.pkg.github.com/:_authToken $TOKEN
         pnpm install
