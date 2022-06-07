@@ -33,6 +33,6 @@ runs:
       shell: bash
       run: |
         npm config set //npm.pkg.github.com/:_authToken $TOKEN
-        pnpm install
+        pnpm install --no-optional
       env:
         TOKEN: ${{ inputs.access_submodules_token }}
