@@ -1,4 +1,5 @@
 name: 'Nx migrate'
+desctiption: https://github.com/jscutlery/semver/blob/main/.github/workflows/nx-migrate.yml
 
 inputs:
   github_token:
@@ -10,12 +11,7 @@ inputs:
 
 runs:
   using: composite
-  # runs-on: ubuntu-latest
   steps:
-    # - uses: actions/checkout@v3
-    # - name: Setup
-    #   uses: ./.github/actions/setup
-
     - name: Check if @nrwl/workspace is outdated
       id: nrwl-workspace-outdated
       run: |
