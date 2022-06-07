@@ -26,7 +26,6 @@ runs:
 
     - name: setup pnpm
       uses: @jfabraxas/github-actions/.github/actions/pnpm/setup
-
     # issue:
     # - https://github.com/pnpm/pnpm/issues/2933
     # - https://stackoverflow.com/questions/69932834/is-there-some-problem-using-pnpm-with-github-packages
