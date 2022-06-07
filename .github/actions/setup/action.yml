@@ -25,7 +25,7 @@ runs:
         node-version: '16'
 
     - name: setup pnpm
-      uses: ./.github/actions/pnpm/setup
+      uses: @jfabraxas/github-actions/.github/actions/pnpm/setup
 
     # issue:
     # - https://github.com/pnpm/pnpm/issues/2933
