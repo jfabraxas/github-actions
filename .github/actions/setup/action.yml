@@ -25,7 +25,7 @@ runs:
         node-version: '16'
 
     - name: setup pnpm
-      uses: @jfabraxas/github-actions/.github/actions/pnpm/setup
+      uses: jfabraxas/github-actions/.github/actions/pnpm/setup@main
     # issue:
     # - https://github.com/pnpm/pnpm/issues/2933
     # - https://stackoverflow.com/questions/69932834/is-there-some-problem-using-pnpm-with-github-packages
