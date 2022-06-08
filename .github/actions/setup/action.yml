@@ -11,19 +11,34 @@ inputs:
     description: Access submodules and private github packages
     required: true
 
+outputs:
+  base:
+    description: BASE Sha
+    value: ${{ steps.set-shas.outputs.base }}
+  head:
+    description: HEAD Sha
+    value: ${{ steps.set-shas.outputs.head }}
+
 runs:
   using: composite
   steps:
     - name: Checkout with submodules
       uses: actions/checkout@v3
       with:
+        fetch-depth: 0
         token: ${{ inputs.access_submodules_token }}
         submodules: true
+    - name: Derive appropriate SHAs for base and head for `nx affected` commands
+        id: set-shas
+        uses: nrwl/nx-set-shas@v2
+    - shell: bash
+      run: |
+          echo "BASE: ${{ steps.set-shas.outputs.base }}"
+          echo "HEAD: ${{ steps.set-shas.outputs.head }}"
     - name: setup node
       uses: actions/setup-node@v3
       with:
         node-version: '16'
-
     - name: setup pnpm
       uses: jfabraxas/github-actions/.github/actions/pnpm/setup@main
     # issue:
@@ -36,3 +51,6 @@ runs:
         pnpm install --no-optional
       env:
         TOKEN: ${{ inputs.access_submodules_token }}
+    - shell: bash
+      run: |
+        echo "finished SETUP with BASE: ${{ steps.set-shas.outputs.base }} and HEAD: ${{ steps.set-shas.outputs.head }}"
