@@ -14,10 +14,10 @@ inputs:
 outputs:
   base:
     description: BASE Sha
-    value: ${{ steps.set-shas.outputs.base }}
+    value: ${{ steps.setShas.outputs.base }}
   head:
     description: HEAD Sha
-    value: ${{ steps.set-shas.outputs.head }}
+    value: ${{ steps.setShas.outputs.head }}
 
 runs:
   using: composite
@@ -29,12 +29,12 @@ runs:
         token: ${{ inputs.access_submodules_token }}
         submodules: true
     - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        id: set-shas
+        id: setShas
         uses: nrwl/nx-set-shas@v2
     - shell: bash
       run: |
-          echo "BASE: ${{ steps.set-shas.outputs.base }}"
-          echo "HEAD: ${{ steps.set-shas.outputs.head }}"
+          echo "BASE: ${{ steps.setShas.outputs.base }}"
+          echo "HEAD: ${{ steps.setShas.outputs.head }}"
     - name: setup node
       uses: actions/setup-node@v3
       with:
@@ -53,4 +53,4 @@ runs:
         TOKEN: ${{ inputs.access_submodules_token }}
     - shell: bash
       run: |
-        echo "finished SETUP with BASE: ${{ steps.set-shas.outputs.base }} and HEAD: ${{ steps.set-shas.outputs.head }}"
+        echo "finished SETUP with BASE: ${{ steps.setShas.outputs.base }} and HEAD: ${{ steps.setShas.outputs.head }}"
