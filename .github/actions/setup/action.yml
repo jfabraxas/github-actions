@@ -29,8 +29,8 @@ runs:
         token: ${{ inputs.access_submodules_token }}
         submodules: true
     - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        id: setShas
-        uses: nrwl/nx-set-shas@v2
+      id: setShas
+      uses: nrwl/nx-set-shas@v2
     - shell: bash
       run: |
           echo "BASE: ${{ steps.setShas.outputs.base }}"
