@@ -4,10 +4,8 @@ desctiption: https://github.com/jscutlery/semver/blob/main/.github/workflows/nx-
 inputs:
   github_token:
     requried: true
-    default: ${{ secrets.GITHUB_TOKEN }}
   migrate_token:
     required: true
-    default: ${{ secrets.GITHUB_TOKEN }}
 
 runs:
   using: composite
