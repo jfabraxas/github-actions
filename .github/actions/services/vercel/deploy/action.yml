@@ -18,7 +18,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Deploy auth.jfa.services to Vercel
+    - name: Deploy to Vercel
       uses: amondnet/vercel-action@v20 #deploy
       with:
         vercel-token: ${{ inputs.vercel_token }} # Required
