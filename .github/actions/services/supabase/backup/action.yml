@@ -43,7 +43,7 @@ inputs:
   backup_filename:
     description: 'Backup filename (without extension)'
     required: false
-    default: 'backup_$(date +\'%Y%m%d\')'
+    default: "backup_$(date +'%Y%m%d')"
 
 runs:
   using: 'composite'
