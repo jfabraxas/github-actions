@@ -1,0 +1,110 @@
+name: 'Backup Supabase Postgres Database'
+
+description: 'Backup Supabase Postgres Database with encryption and push to repository.'
+
+inputs:
+  supabase_db_url:
+    description: 'Supabase Database URL (e.g., postgresql://user:password@host:port/dbname)'
+    required: false
+  supabase_db_user:
+    description: 'Supabase DB User'
+    required: false
+  supabase_db_password:
+    description: 'Supabase DB Password'
+    required: false
+    secret: true
+  supabase_db_host:
+    description: 'Supabase DB Host'
+    required: false
+  supabase_db_port:
+    description: 'Supabase DB Port'
+    required: false
+  supabase_db_name:
+    description: 'Supabase DB Name'
+    required: false
+  gpg_private_key:
+    description: 'GPG Private Key'
+    required: true
+    secret: true
+  gpg_passphrase:
+    description: 'GPG Passphrase'
+    required: true
+    secret: true
+  git_user_email:
+    description: 'Git User Email'
+    required: true
+  git_user_name:
+    description: 'Git User Name'
+    required: true
+  backup_folder:
+    description: 'Folder where the backup will be stored'
+    required: false
+    default: '_backups'
+  backup_filename:
+    description: 'Backup filename (without extension)'
+    required: false
+    default: 'backup_$(date +\'%Y%m%d\')'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check out the repository
+      uses: actions/checkout@v3
+
+    - name: Remove old PostgreSQL versions
+      run: sudo apt-get remove --purge postgresql-client*
+
+    - name: Add PostgreSQL APT Repository
+      run: |
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        sudo apt-get update
+
+    - name: Install PostgreSQL Client Tools (initial)
+      run: sudo apt-get install postgresql-client
+
+    - name: Determine Supabase connection string
+      id: determine_connection
+      run: |
+        if [ -n "${{ inputs.supabase_db_url }}" ]; then
+          # If URL is provided, use it directly
+          CONNECTION_STRING="${{ inputs.supabase_db_url }}"
+        elif [ -n "${{ inputs.supabase_db_user }}" ] && [ -n "${{ inputs.supabase_db_password }}" ] && [ -n "${{ inputs.supabase_db_host }}" ] && [ -n "${{ inputs.supabase_db_port }}" ] && [ -n "${{ inputs.supabase_db_name }}" ]; then
+          # If URL is not provided, but all separate inputs are given, construct the connection string
+          CONNECTION_STRING="postgresql://${{ inputs.supabase_db_user }}:${{ inputs.supabase_db_password }}@${{ inputs.supabase_db_host }}:${{ inputs.supabase_db_port }}/${{ inputs.supabase_db_name }}"
+        else
+          echo "Either supabase_db_url or all individual database inputs must be provided."
+          exit 1
+        fi
+        echo "Connection String: $CONNECTION_STRING"
+        echo "::set-output name=connection_string::$CONNECTION_STRING"
+
+    - name: Dump the Supabase Postgres database
+      run: |
+        export PGPASSWORD=${{ inputs.supabase_db_password }}
+        pg_dump "${{ steps.determine_connection.outputs.connection_string }}" > backup.sql
+
+    - name: Import GPG private key
+      run: |
+        echo "${{ inputs.gpg_private_key }}" | gpg --batch --import
+        echo "GPG key imported"
+
+    - name: Encrypt the backup
+      run: |
+        gpg --batch --yes --passphrase "${{ inputs.gpg_passphrase }}" --output backup.sql.gpg --symmetric --cipher-algo AES256 backup.sql
+
+    - name: Create backup folder if not exists
+      run: |
+        mkdir -p ${{ inputs.backup_folder }}
+
+    - name: Move the backup to the backups folder
+      run: |
+        mv backup.sql.gpg ${{ inputs.backup_folder }}/${{ inputs.backup_filename }}.sql.gpg
+
+    - name: Commit and push backup
+      run: |
+        git config --global user.email "${{ inputs.git_user_email }}"
+        git config --global user.name "${{ inputs.git_user_name }}"
+        git add ${{ inputs.backup_folder }}/${{ inputs.backup_filename }}.sql.gpg
+        git commit -m "Backup from $(date +'%Y-%m-%d')"
+        git push
