@@ -52,19 +52,23 @@ runs:
       uses: actions/checkout@v3
 
     - name: Remove old PostgreSQL versions
+      shell: bash
       run: sudo apt-get remove --purge postgresql-client*
 
     - name: Add PostgreSQL APT Repository
+      shell: bash
       run: |
         sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
         wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
         sudo apt-get update
 
     - name: Install PostgreSQL Client Tools (initial)
+      shell: bash
       run: sudo apt-get install postgresql-client
 
     - name: Determine Supabase connection string
       id: determine_connection
+      shell: bash
       run: |
         if [ -n "${{ inputs.supabase_db_url }}" ]; then
           # If URL is provided, use it directly
@@ -80,28 +84,34 @@ runs:
         echo "::set-output name=connection_string::$CONNECTION_STRING"
 
     - name: Dump the Supabase Postgres database
+      shell: bash
       run: |
         export PGPASSWORD=${{ inputs.supabase_db_password }}
         pg_dump "${{ steps.determine_connection.outputs.connection_string }}" > backup.sql
 
     - name: Import GPG private key
+      shell: bash
       run: |
         echo "${{ inputs.gpg_private_key }}" | gpg --batch --import
         echo "GPG key imported"
 
     - name: Encrypt the backup
+      shell: bash
       run: |
         gpg --batch --yes --passphrase "${{ inputs.gpg_passphrase }}" --output backup.sql.gpg --symmetric --cipher-algo AES256 backup.sql
 
     - name: Create backup folder if not exists
+      shell: bash
       run: |
         mkdir -p ${{ inputs.backup_folder }}
 
     - name: Move the backup to the backups folder
+      shell: bash
       run: |
         mv backup.sql.gpg ${{ inputs.backup_folder }}/${{ inputs.backup_filename }}.sql.gpg
 
     - name: Commit and push backup
+      shell: bash
       run: |
         git config --global user.email "${{ inputs.git_user_email }}"
         git config --global user.name "${{ inputs.git_user_name }}"
