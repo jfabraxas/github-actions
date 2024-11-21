@@ -1,0 +1,5 @@
+{
+    "view": "default",
+    "installDependencies": true,
+    "startCommand": "pnpm dev"
+  }
