@@ -1,0 +1,34 @@
+name: 'Build and Deploy Storybook'
+description: 'A reusable action to build and deploy Storybook'
+inputs:
+  storybook_dir:
+    description: 'The directory containing the built Storybook'
+    required: true
+  push_to_collection:
+    description: 'Whether to push links to the collection repo'
+    required: false
+    default: 'false'
+  collection_repo:
+    description: 'The repository to push links to'
+    required: false
+
+runs:
+  using: 'node12'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build Storybook
+      run: npm run build-storybook -o ${{ inputs.storybook_dir }}
+
+    - name: Optionally push links to collection repo
+      if: ${{ inputs.push_to_collection == 'true' }}
+      run: |
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+        git clone https://github.com/<username>/<collection_repo>.git collection
+        cd collection
+        echo "Storybook link for ${{ github.repository }}: https://<username>.github.io/${{ github.repository }}/${{ inputs.storybook_dir }}/" >> links.txt
+        git add links.txt
+        git commit -m "Add Storybook link for ${{ github.repository }}"
+        git push origin mainÏ
