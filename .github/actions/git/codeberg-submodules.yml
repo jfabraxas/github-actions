@@ -1,0 +1,67 @@
+# .github/actions/checkout-with-codeberg-submodules/action.yml
+name: 'Checkout with Codeberg Submodules'
+description: 'Checkout repository and initialize private submodules from Codeberg'
+inputs:
+  ssh-private-key:
+    description: 'SSH private key for Codeberg access'
+    required: true
+  token:
+    description: 'GitHub token for main repository access'
+    required: false
+    default: ${{ github.token }}
+  submodules:
+    description: 'Whether to checkout submodules (true/false/recursive)'
+    required: false
+    default: 'recursive'
+  fetch-depth:
+    description: 'Number of commits to fetch. 0 indicates all history'
+    required: false
+    default: '1'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout main repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.token }}
+        fetch-depth: ${{ inputs.fetch-depth }}
+        submodules: false
+
+    - name: Setup SSH for Codeberg
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ inputs.ssh-private-key }}
+
+    - name: Configure Git for Codeberg SSH
+      shell: bash
+      run: |
+        # Configure Git to use SSH for Codeberg
+        git config --global url."git@codeberg.org:".insteadOf "https://codeberg.org/"
+        
+        # Add Codeberg to known hosts
+        ssh-keyscan -H codeberg.org >> ~/.ssh/known_hosts
+        
+        # Verify SSH connection (optional, for debugging)
+        ssh -T git@codeberg.org || true
+
+    - name: Initialize and update submodules
+      shell: bash
+      run: |
+        if [ "${{ inputs.submodules }}" = "true" ] || [ "${{ inputs.submodules }}" = "recursive" ]; then
+          echo "Initializing submodules..."
+          git submodule init
+          
+          if [ "${{ inputs.submodules }}" = "recursive" ]; then
+            echo "Updating submodules recursively..."
+            git submodule update --recursive --remote
+          else
+            echo "Updating submodules..."
+            git submodule update --remote
+          fi
+          
+          echo "Submodules updated successfully!"
+          git submodule status
+        else
+          echo "Skipping submodule initialization"
+        fi
