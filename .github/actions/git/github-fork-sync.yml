@@ -1,0 +1,170 @@
+name: 'Sync Fork with Upstream'
+description: 'Automatically sync a forked repository with its upstream repository'
+
+inputs:
+  upstream-repository:
+    description: 'The upstream repository to sync from (format: owner/repo)'
+    required: false
+    default: ''
+  
+  target-branch:
+    description: 'The branch to sync (default: main)'
+    required: false
+    default: 'main'
+  
+  sync-method:
+    description: 'Sync method: merge, rebase, or reset (default: merge)'
+    required: false
+    default: 'merge'
+  
+  token:
+    description: 'GitHub token for authentication'
+    required: false
+    default: ${{ github.token }}
+  
+  dry-run:
+    description: 'Run in dry-run mode (no actual push)'
+    required: false
+    default: 'false'
+
+outputs:
+  synced:
+    description: 'Whether the sync was successful'
+    value: ${{ steps.sync.outputs.synced }}
+  
+  changes:
+    description: 'Whether there were changes to sync'
+    value: ${{ steps.sync.outputs.changes }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.token }}
+        fetch-depth: 0
+
+    - name: Detect upstream repository
+      id: detect-upstream
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.upstream-repository }}" ]; then
+          echo "upstream=${{ inputs.upstream-repository }}" >> $GITHUB_OUTPUT
+        else
+          # Try to detect from repository metadata
+          upstream=$(gh api repos/${{ github.repository }} --jq '.parent.full_name // empty' || echo "")
+          if [ -z "$upstream" ]; then
+            echo "::error::Could not detect upstream repository. Please specify upstream-repository input."
+            exit 1
+          fi
+          echo "upstream=$upstream" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Sync with upstream
+      id: sync
+      shell: bash
+      run: |
+        set -e
+        
+        upstream_repo="${{ steps.detect-upstream.outputs.upstream }}"
+        target_branch="${{ inputs.target-branch }}"
+        sync_method="${{ inputs.sync-method }}"
+        dry_run="${{ inputs.dry-run }}"
+        
+        echo "🔄 Syncing with upstream: $upstream_repo"
+        echo "📋 Target branch: $target_branch"
+        echo "⚙️ Sync method: $sync_method"
+        
+        # Add upstream remote
+        git remote add upstream "https://github.com/$upstream_repo.git" 2>/dev/null || true
+        
+        # Fetch upstream changes
+        echo "📥 Fetching upstream changes..."
+        git fetch upstream
+        
+        # Switch to target branch
+        git checkout "$target_branch" || {
+          echo "::error::Branch '$target_branch' does not exist"
+          exit 1
+        }
+        
+        # Check if upstream branch exists
+        if ! git ls-remote --heads upstream "$target_branch" | grep -q "$target_branch"; then
+          echo "::error::Branch '$target_branch' does not exist in upstream repository"
+          exit 1
+        fi
+        
+        # Get current commit hash
+        current_hash=$(git rev-parse HEAD)
+        upstream_hash=$(git rev-parse "upstream/$target_branch")
+        
+        if [ "$current_hash" = "$upstream_hash" ]; then
+          echo "✅ Already up to date with upstream"
+          echo "changes=false" >> $GITHUB_OUTPUT
+          echo "synced=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        echo "📊 Changes detected:"
+        git log --oneline "$current_hash..$upstream_hash" || true
+        
+        # Perform sync based on method
+        case "$sync_method" in
+          "merge")
+            echo "🔀 Merging upstream changes..."
+            git merge "upstream/$target_branch" --no-edit
+            ;;
+          "rebase")
+            echo "📈 Rebasing onto upstream..."
+            git rebase "upstream/$target_branch"
+            ;;
+          "reset")
+            echo "🔄 Hard reset to upstream..."
+            git reset --hard "upstream/$target_branch"
+            ;;
+          *)
+            echo "::error::Invalid sync method: $sync_method. Use 'merge', 'rebase', or 'reset'"
+            exit 1
+            ;;
+        esac
+        
+        # Push changes (unless dry run)
+        if [ "$dry_run" = "true" ]; then
+          echo "🧪 Dry run mode - not pushing changes"
+          echo "📋 Would push the following changes:"
+          git log --oneline "$current_hash..HEAD" || true
+        else
+          echo "⬆️ Pushing changes to origin..."
+          if [ "$sync_method" = "rebase" ] || [ "$sync_method" = "reset" ]; then
+            git push origin "$target_branch" --force-with-lease
+          else
+            git push origin "$target_branch"
+          fi
+          echo "✅ Successfully synced fork with upstream"
+        fi
+        
+        echo "changes=true" >> $GITHUB_OUTPUT
+        echo "synced=true" >> $GITHUB_OUTPUT
+
+    - name: Summary
+      shell: bash
+      if: always()
+      run: |
+        if [ "${{ steps.sync.outputs.synced }}" = "true" ]; then
+          if [ "${{ steps.sync.outputs.changes }}" = "true" ]; then
+            echo "✅ Fork successfully synced with upstream changes"
+          else
+            echo "ℹ️ Fork was already up to date"
+          fi
+        else
+          echo "❌ Failed to sync fork"
+        fi
