@@ -1,0 +1,38 @@
+name: "Qdrant Backup"
+description: "Backup Qdrant snapshot and encrypt"
+inputs:
+  qdrant_host:
+    required: true
+  qdrant_api_key:
+    required: true
+  collection_name:
+    required: true
+  gpg_private_key:
+    required: true
+  gpg_passphrase:
+    required: true
+  backup_folder:
+    required: true
+  backup_filename:
+    required: false
+    default: "qdrant_backup_$(date +%Y%m%d_%H%M%S).tar.gpg"
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        QDRANT_HOST: ${{ inputs.qdrant_host }}
+        QDRANT_API_KEY: ${{ inputs.qdrant_api_key }}
+        GPG_PRIVATE_KEY: ${{ inputs.gpg_private_key }}
+        GPG_PASSPHRASE: ${{ inputs.gpg_passphrase }}
+      run: |
+        set -e
+        mkdir -p ${{ inputs.backup_folder }}
+        SNAPSHOT_INFO=$(curl -s -X POST "$QDRANT_HOST/collections/${{ inputs.collection_name }}/snapshots" \
+          -H "api-key: $QDRANT_API_KEY")
+        SNAPSHOT_URL=$(echo "$SNAPSHOT_INFO" | jq -r .result.snapshot_path)
+        curl -s "$QDRANT_HOST$SNAPSHOT_URL" -H "api-key: $QDRANT_API_KEY" -o ${{ inputs.backup_folder }}/plain.tar
+        echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+        echo "$GPG_PASSPHRASE" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+          -o "${{ inputs.backup_folder }}/${{ inputs.backup_filename }}" ${{ inputs.backup_folder }}/plain.tar
+        rm ${{ inputs.backup_folder }}/plain.tar
