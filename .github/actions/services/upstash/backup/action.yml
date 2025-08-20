@@ -1,0 +1,33 @@
+name: "Upstash Redis Backup"
+description: "Backup Upstash Redis and encrypt"
+inputs:
+  redis_url:
+    required: true
+  redis_password:
+    required: true
+  gpg_private_key:
+    required: true
+  gpg_passphrase:
+    required: true
+  backup_folder:
+    required: true
+  backup_filename:
+    required: false
+    default: "upstash_backup_$(date +%Y%m%d_%H%M%S).rdb.gpg"
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        REDIS_URL: ${{ inputs.redis_url }}
+        REDIS_PASSWORD: ${{ inputs.redis_password }}
+        GPG_PRIVATE_KEY: ${{ inputs.gpg_private_key }}
+        GPG_PASSPHRASE: ${{ inputs.gpg_passphrase }}
+      run: |
+        set -e
+        mkdir -p ${{ inputs.backup_folder }}
+        # Upstash REST API for backup is not public, so as a placeholder:
+        # Use redis-cli to dump if possible (requires self-hosted runner with redis-tools)
+        echo "TODO: Implement Upstash backup via REST API or CLI."
+        # Placeholder for export command
+        echo "Upstash backup not implemented. Please export manually."
